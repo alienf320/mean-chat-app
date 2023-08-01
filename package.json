@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run mongodb\"",
+    "backend": "cd backend && nodemon src/index.js",
+    "frontend": "cd frontend && ng serve",
+    "mongodb": "mongod"
   },
   "author": "",
   "license": "ISC",

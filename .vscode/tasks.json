@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start MongoDB",
+      "type": "shell",
+      "command": "mongod",
+      "dependsOn": "Start Frontend",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+    },
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "npm run backend",
+      "group": "build"
+    },
+    {
+      "label": "Start Frontend",
+      "type": "shell",
+      "command": "npm run frontend",
+      "group": "build",
+      "dependsOn": "Start Backend"
+    }
+  ]
+}
