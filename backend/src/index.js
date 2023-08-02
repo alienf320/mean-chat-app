@@ -45,10 +45,10 @@ io.on("connection", async (socket) => {
           name: room,
           participants: [user._id],
         });
-        await chatRoom.save();
-      } else {
+      } else if(!chatRoom.participants.includes(user._id)){
         chatRoom.participants.push(user._id);
       }
+      await chatRoom.save()
 
       // Buscar los mensajes de la sala de chat
       const messages = await Message.find({ room: chatRoom._id }).populate(
