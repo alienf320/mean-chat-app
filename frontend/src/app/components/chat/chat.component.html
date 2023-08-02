@@ -1,0 +1,36 @@
+<div class="rooms">
+  <div class="room" *ngFor="let room of rooms" (click)="changeRoom(room.name)">
+    {{ room.name }}
+  </div>
+</div>
+<div class="main">
+  <div class="bar">
+    <button (click)="logout()">Log Out</button>
+  </div>
+  <div class="chat-container">
+    <div class="chat-messages" *ngIf="messages.length > 0">
+      <div
+        *ngFor="let message of messages"
+        class="message"
+        [ngClass]="{
+          'from-me': message.sender === username,
+          notification: message.notification
+        }"
+      >
+        <div *ngIf="message.sender" class="user">{{ message.sender }}</div>
+        <div class="message-content">
+          {{ message.text }}
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <input
+        [(ngModel)]="newMessage"
+        (keyup.enter)="sendMessage()"
+        placeholder="Type your message here..."
+      />
+      <button (click)="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
