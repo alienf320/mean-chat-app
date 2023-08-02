@@ -22,78 +22,71 @@ io.on("connection", async (socket) => {
   console.log("User connected");
 
   socket.on("join-room", async ({ username, room }, callback) => {
-    //console.log("join-room", username, room);
-    try {
-      socket.join(room);
-      const mensaje = `User ${username} has joined the room`;
-      socket.broadcast.to(room).emit('notification', mensaje)
-      callback(mensaje);
-      // socket.data.username = username;
-
-      let chatRoom = await ChatRoom.findOne({ name: room });
-      let user = await User.findOne({ username });
-      if (!user) {
-        user = new User({
-          username: username,
-        });
-        await user.save();
-      }
-
-      // Crear la sala de chat si no existe
-      if (!chatRoom) {
-        chatRoom = new ChatRoom({
-          name: room,
-          participants: [user._id],
-        });
-      } else if(!chatRoom.participants.includes(user._id)){
-        chatRoom.participants.push(user._id);
-      }
-      await chatRoom.save()
-
-      // Look for all the rooms
-      const rooms = await ChatRoom.find({})
-
-      // Buscar los mensajes de la sala de chat
-      const messages = await Message.find({ room: chatRoom._id }).populate(
-        "sender"
-      );
-
-      // Emitir la información de la sala y los mensajes al cliente
-      socket.emit("chat-history", { chatRoom, messages, rooms });
-    } catch (error) {
-      console.error("Error fetching chat messages:", error);
-    }
+    await handleJoinRoom(socket, username, room, callback);
   });
 
   socket.on("send-message", async (data) => {
-    //console.log('Message received:', data);
-    try {
-      const room = await ChatRoom.findOne({ name: data.room });
-      const newMessage = new Message({
-        text: data.text,
-        sender: data.sender,
-        room: room._id,
-      });
-      await newMessage.save();
-
-      socket.broadcast.to(data.room).emit("message", data);
-    } catch (error) {
-      console.error("Error saving the message:", error);
-    }
+    await handleSendMessage(socket, data);
   });
 
   socket.on("send-notification", async (text, room) => {
-    socket.broadcast.to(room).emit("notification", text)
-  })
-
-  socket.on("change-room", (room) => {
-    socket.join(room);
-  })
+    await handleSendNotification(socket, text, room);
+  });
 
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
 });
+
+async function handleJoinRoom(socket, username, room, callback) {
+  try {
+    socket.join(room);
+    const msj = `User ${username} has joined the room`;
+    socket.broadcast.to(room).emit('notification', msj);
+    callback(msj);
+
+    let user = await User.findOne({ username });
+
+    if (!user) {
+      user = new User({
+        username: username,
+      });
+      await user.save();
+    }
+
+    let chatRoom = await ChatRoom.findOneAndUpdate(
+      { name: room },
+      { $addToSet: { participants: user._id } },
+      { upsert: true, new: true }
+    );
+
+    const rooms = await ChatRoom.find({});
+    const messages = await Message.find({ room: chatRoom._id }).populate(
+      "sender"
+    );
+
+    socket.emit("chat-history", { chatRoom, messages, rooms });
+  } catch (error) {
+    console.error("Error joining room:", error);
+  }
+}
+
+
+async function handleSendMessage(socket, data) {
+  const room = await ChatRoom.findOne({ name: data.room });
+  const newMessage = new Message({
+    text: data.text,
+    sender: data.sender,
+    room: room._id,
+  });
+  await newMessage.save();
+  socket.broadcast.to(data.room).emit("message", data);
+}
+
+async function handleSendNotification(socket, text, room) {
+  console.log('Debería enviar la noti al room: ', room, text)
+  socket.broadcast.to(room).emit("notification", text)
+}
 
 http.listen(port, () => {
   console.log("Server is running on port " + port);
