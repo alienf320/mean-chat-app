@@ -27,8 +27,8 @@ io.on("connection", async (socket) => {
       socket.join(room);
       const mensaje = `User ${username} has joined the room`;
       socket.broadcast.to(room).emit('notification', mensaje)
+      callback(mensaje);
       // socket.data.username = username;
-      // callback(mensaje);
 
       let chatRoom = await ChatRoom.findOne({ name: room });
       let user = await User.findOne({ username });
@@ -50,13 +50,16 @@ io.on("connection", async (socket) => {
       }
       await chatRoom.save()
 
+      // Look for all the rooms
+      const rooms = await ChatRoom.find({})
+
       // Buscar los mensajes de la sala de chat
       const messages = await Message.find({ room: chatRoom._id }).populate(
         "sender"
       );
 
       // Emitir la información de la sala y los mensajes al cliente
-      socket.emit("chat-history", { chatRoom, messages });
+      socket.emit("chat-history", { chatRoom, messages, rooms });
     } catch (error) {
       console.error("Error fetching chat messages:", error);
     }
@@ -81,6 +84,10 @@ io.on("connection", async (socket) => {
 
   socket.on("send-notification", async (text, room) => {
     socket.broadcast.to(room).emit("notification", text)
+  })
+
+  socket.on("change-room", (room) => {
+    socket.join(room);
   })
 
   socket.on("disconnect", () => {
